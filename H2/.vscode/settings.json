@@ -1,0 +1,11 @@
+{
+  "files.associations": {
+    "shm.h": "c",
+    "stdbool.h": "c",
+    "functions.h": "c",
+    "stdio.h": "c",
+    "unistd.h": "c",
+    "stdlib.h": "c",
+    "types.h": "c"
+  }
+}
