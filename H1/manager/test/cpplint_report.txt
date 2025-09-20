@@ -1,0 +1,3 @@
+Skipping input '../include/functions.h': Can't open for reading
+Skipping input '../src/functions.c': Can't open for reading
+Done processing ../src/main.c

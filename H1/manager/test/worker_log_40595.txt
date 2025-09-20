@@ -1,0 +1,2 @@
+SIGUSR2 received
+SIGUSR1 received

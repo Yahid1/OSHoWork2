@@ -1,0 +1,4 @@
+worker1 SIGUSR1
+worker2 SIGUSR2
+worker1 SIGUSR2
+worker2 SIGUSR1
