@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include "functions.c"
 
 typedef struct {
     int total;
@@ -29,7 +28,7 @@ static TicketShared *mem = NULL;
 static sem_t *sem_lock = SEM_FAILED;
 
 
-static void cleanup(void) {
+static void Cleanup(void) {
     if (mem && mem != MAP_FAILED) {
         munmap(mem, sizeof(*mem));
         mem = NULL;
@@ -44,10 +43,10 @@ static void cleanup(void) {
     }
 }
 
-static void on_sigint(int sig) {
+static void OnSigint(int sig) {
     (void)sig;
     write(STDOUT_FILENO, "\n", 1);
-    cleanup();
+    Cleanup();
     _Exit(0);
 }
 
@@ -75,21 +74,21 @@ static bool AttachMemory(const char *shm_name, const char *sem_name) {
 
 // 2) BuyTickets: aplica reglas de negocio y actualiza memoria compartida.
 //    Devuelve los boletos vendidos en esta operación (0 si inválido o agotado).
-static int BuyTickets(int requested) {
+static void BuyTickets(int requested) {
     // Regla 3: inválido si <= 0 (no cuenta transacción)
     if (requested <= 0) {
         printf("Try again, invalid number of tickets\n");
         fflush(stdout);
-        return 0;
+        return;
     }
 
     // Regla 1: máximo 5 por compra
     if (requested > 5) requested = 5;
 
     if (sem_wait(sem_lock) == -1) {
-        if (errno == EINTR) return 0;
+        if (errno == EINTR) return;
         perror("sem_wait");
-        return 0;
+        return;
     }
 
     int available = mem->available;
@@ -101,8 +100,8 @@ static int BuyTickets(int requested) {
 
         mem->available    -= sold;
         mem->purchased    += sold;
-        mem->transactions += 1;     // solo contamos transacciones válidas (>0 vendidos)
-        available = mem->available; // actualizado
+        mem->transactions += 1;
+        available = mem->available;
     }
 
     if (sem_post(sem_lock) == -1) {
@@ -112,8 +111,7 @@ static int BuyTickets(int requested) {
     // Mensaje de resultado de la compra (exacto al formato de ejemplo)
     printf("Company purchased %d tickets. Available: %d\n\n", sold, available);
     fflush(stdout);
-
-    return sold;
+    return;
 }
 
 int main(int argc, char *argv[]) {
@@ -122,7 +120,7 @@ int main(int argc, char *argv[]) {
 
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
-    sa.sa_handler = on_sigint;
+    sa.sa_handler = OnSigint;
     sigaction(SIGINT,  &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
@@ -146,7 +144,6 @@ int main(int argc, char *argv[]) {
         }
 
         // Pedir al usuario
-        // printf("//Buyer try to buy ");
         fflush(stdout);
 
         // Leemos línea; si EOF, salimos limpiamente
@@ -157,28 +154,23 @@ int main(int argc, char *argv[]) {
 
         // Intentar extraer el número al vuelo para eco del prompt
         char *endptr = NULL;
-        long req = strtol(line, &endptr, 10);
-        // Imprimir el número que el usuario intentó comprar (como en el ejemplo)
-        // Si la línea no tenía número válido, mostramos lo que el usuario escribió (limpio)
-        // pero igual vamos a tratarlos como inválidos abajo.
-        // Para ajustarnos al ejemplo, imprimimos el número parseado si hay.
+        int64_t req = strtol(line, &endptr, 10);
         if (endptr != line) {
             // teníamos un número
             printf("%ld\n", req);
         } else {
-            // no se parseó número: mostramos la línea tal cual (sin salto extra)
+            // no se parseó número
             size_t len = strcspn(line, "\r\n");
             fwrite(line, 1, len, stdout);
             printf("\n");
         }
 
         // Ejecutar compra
-        (void)BuyTickets((int)req);
+        BuyTickets((int)req);
 
-        // Esperar 2 segundos (simular procesamiento)
         sleep(2);
     }
 
-    cleanup();
+    Cleanup();
     return 0;
 }

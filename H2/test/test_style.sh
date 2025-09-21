@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the source file to check
-SOURCE_FILE="../src/main.c"
+SOURCE_FILE="../ticket_office/src/main.c"
 HEADER_FILE="../include/functions.h"
 FUNCTIONS_FILE="../src/functions.c"
 
